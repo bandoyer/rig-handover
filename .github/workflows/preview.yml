@@ -1,0 +1,56 @@
+# Plan morning-digest § 3 and § 4 (ADR 0003): save /digest/2026-10-28 as one HTML file and
+# publish it to GitHub Pages. The page is built here and deployed as a Pages artifact, so the
+# preview is never committed. The marker comes from the LANE_MARKER secret; delete the secret
+# and run this again to put the same page up without it.
+name: preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Save the digest page
+        env:
+          LANE_MARKER: ${{ secrets.LANE_MARKER }}
+          PORT: '8787'
+        run: |
+          mkdir -p _site
+          pnpm start > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8787/health > /dev/null && break; sleep 1; done
+          curl -sf http://localhost:8787/digest/2026-10-28 -o _site/index.html
+          kill %1 || true
+          if grep -q 'no marker set' _site/index.html; then echo "banner: no marker set"; else echo "banner: marker present"; fi
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
