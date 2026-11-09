@@ -95,7 +95,7 @@ describe('GET /digest/:night', () => {
     const res = await app().request(`/digest/${BAD_LINE_NIGHT}`);
     const html = await res.text();
     expect(res.status).toBe(200);
-    expect(html).toContain('1 line(s) could not be read');
+    expect(html).toContain('1 line could not be read');
     for (const job of JOBS) expect(html).toContain(job);
   });
 
