@@ -17,6 +17,7 @@ export type DigestRow = {
   owner: string | null;
   runs: number; // lines for this job
   retries: number; // lines with status "retry"
+  fails: number; // lines with status "fail"
   lastStatus: RunStatus;
   lastError: string | null;
   firstAt: string;
@@ -27,6 +28,7 @@ export type Night = {
   night: string; // YYYY-MM-DD
   rows: DigestRow[]; // sorted by job
   badLines: number; // lines that did not parse
+  counts: { ok: number; retry: number; fail: number }; // parsed lines by status, whole night
 };
 
 // Reads runs/<night>.jsonl from runsDir. Returns null when the night has no file.
